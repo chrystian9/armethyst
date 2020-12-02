@@ -235,18 +235,10 @@ void test02(BasicCPUTest* cpu, BasicMemoryTest* memory, string fname)
 	// Test FADD (linha 58)
 	//
 	fpOp = true;
-<<<<<<< HEAD
-	instruction = "fadd s0, s0, s0";
-	startAddress = 0x80; // endereço de 'fadd s0, s0, s0'
-	xpctdIR = 0x1E202800;
-	fA = fB; // tentando arrumar
-	xpctdA = Util::floatAsUint64Low(fA); // valor arbitrário para s1
-=======
 	instruction = "fadd s1, s1, s0";
 	startAddress = 0xBC; // endereço de 'fadd	s1, s1, s0'
 	xpctdIR = 0x1E202821;
 	xpctdA = Util::floatAsUint64Low(fA);	// valor arbitrário para s1
->>>>>>> e8df6ea1c6f051a4639fae6cf8f89edcc42211b2
 	xpctdB = Util::floatAsUint64Low(fB); // valor arbitrário para s0
 	cpu->setS(1,fA); // temos que fazer s1 valer xpctdA
 	cpu->setS(0,fB); // temos que fazer s0 valer xpctdB
@@ -254,10 +246,6 @@ void test02(BasicCPUTest* cpu, BasicMemoryTest* memory, string fname)
 	xpctdMEMctrl = MEMctrlFlag::MEM_NONE;
 	xpctdWBctrl = WBctrlFlag::RegWrite;
 	
-<<<<<<< HEAD
-	//xpctdALUout = Util::doubleAsUint64(fA+fB);
-=======
->>>>>>> e8df6ea1c6f051a4639fae6cf8f89edcc42211b2
 	xpctdALUout = Util::floatAsUint64Low(fA+fB);
 	
 	xpctdRd = xpctdALUout;
