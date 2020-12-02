@@ -347,7 +347,6 @@ int BasicCPU::decodeDataProcFloat() {
 			return 0;
 			break;
 		case 0x1E202800:
-		//case 0x1E202820:
 			
 			if (IR & 0x00C00000) return 1;
 			
@@ -355,6 +354,7 @@ int BasicCPU::decodeDataProcFloat() {
 			
 			// ler A e B
 			n = (IR & 0x000003E0) >> 5;
+			//n++; //faz dar certo em fadd s0 s0 s0;
 			A = getSasInt(n); // 32-bit variant
 			
 			m = (IR & 0x001F0000) >> 16;
@@ -457,6 +457,7 @@ int BasicCPU::EXF()
 				return 0;
 			case ALUctrlFlag::ADD:
 				ALUout = Util::floatAsUint64Low(fA + fB);
+				//ALUout = Util::doubleAsUint64(fA + fB); // assim funciona
 				return 0;
 			default:
 				// Controle não implementado
