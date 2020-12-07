@@ -1,4 +1,3 @@
-#include <iostream>
 /* ----------------------------------------------------------------------------
 
     (EN) armethyst - A simple ARM Simulator written in C++ for Computer Architecture
@@ -282,6 +281,14 @@ int BasicCPU::decodeDataProcReg() {
 			
 			// ATIVIDADE FUTURA:
 			// implementar informações para os estágios MEM e WB.
+			MEMctrl = MEMctrlFlag::MEM_NONE;
+			
+			// atribuir WBctrl
+			WBctrl = WBctrlFlag::RegWrite;
+			
+			// atribuir MemtoReg
+			MemtoReg = false;
+			
 
 			return 0;
 	}
@@ -482,7 +489,24 @@ int BasicCPU::MEM()
 	// chamadas aos métodos corretos que implementam cada caso de
 	// acesso à memória de dados.
 	// não implementado
-
+	
+    switch (MEMctrl) {
+		case MEMctrlFlag::READ32:
+			MDR = memory->readData32(ALUout);
+			return 0;
+		case MEMctrlFlag::WRITE32:
+			memory->writeData32(ALUout,*Rd);
+			return 0;
+		case MEMctrlFlag::READ64:
+			MDR = memory->readData64(ALUout);
+			return 0;
+		case MEMctrlFlag::WRITE64:
+			memory->writeData64(ALUout,*Rd);
+			return 0;
+		default:
+			return 0;
+	}        
+    // não implementado
 	return 1;
 }
 
@@ -501,10 +525,23 @@ int BasicCPU::WB()
 	// atribuições corretas do registrador destino, quando houver, ou
 	// return 0 no caso WBctrlFlag::WB_NONE.
 	
+	switch (WBctrl) {
+        case WBctrlFlag::WB_NONE:
+            return 0;
+        case WBctrlFlag::RegWrite:
+            if (MemtoReg) {
+                *Rd = MDR;
+            } else {
+                *Rd = ALUout;
+            }
+            return 0;
+        default:
+            // não implementado
+            return 1;
+    }
 	// não implementado
 	return 1;
-}
-
+}	
 
 /**
  * Métodos de acesso ao banco de registradores
