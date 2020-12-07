@@ -1,3 +1,4 @@
+#include <iostream>
 /* ----------------------------------------------------------------------------
 
     (EN) armethyst - A simple ARM Simulator written in C++ for Computer Architecture
@@ -122,12 +123,10 @@ int BasicCPU::ID()
 		case 0x1A000000:
 			return decodeDataProcReg();
 			break;
-		
-		// TODO
-		// implementar o GRUPO A SEGUIR
-		//
-		// x111 Data Processing -- Scalar Floating-Point and Advanced SIMD on page C4-288
-
+		case 0x0E000000:
+		case 0x1E000000:
+			return decodeDataProcFloat();
+			break;
 		
 		// ATIVIDADE FUTURA
 		// implementar os DOIS GRUPOS A SEGUIR
@@ -346,7 +345,39 @@ int BasicCPU::decodeDataProcFloat() {
 			MemtoReg = false;
 			
 			return 0;
-
+			break;
+		case 0x1E202800:
+			
+			if (IR & 0x00C00000) return 1;
+			
+			fpOp = FPOpFlag::FP_REG_32;
+			
+			// ler A e B
+			n = (IR & 0x000003E0) >> 5;
+			//n++; //faz dar certo em fadd s0 s0 s0;
+			A = getSasInt(n); // 32-bit variant
+			
+			m = (IR & 0x001F0000) >> 16;
+			B = getSasInt(m);
+			
+			// registrador destino
+			d = (IR & 0x0000001F);
+			Rd = &(V[d]);
+			
+			// atribuir ALUctrl
+			ALUctrl = ALUctrlFlag::ADD;
+			
+			// atribuir MEMctrl
+			MEMctrl = MEMctrlFlag::MEM_NONE;
+			
+			// atribuir WBctrl
+			WBctrl = WBctrlFlag::RegWrite;
+			
+			// atribuir MemtoReg
+			MemtoReg = false;
+			
+			return 0;
+			break;
 		default:
 			// instrução não implementada
 			return 1;
@@ -382,6 +413,9 @@ int BasicCPU::EXI()
 		case ALUctrlFlag::SUB:
 			ALUout = A - B;
 			return 0;
+		case ALUctrlFlag::ADD:
+			ALUout = A + B;
+			return 0;
 		default:
 			// Controle não implementado
 			return 1;
@@ -412,7 +446,6 @@ int BasicCPU::EXF()
 	//
 	// Verifique que ALUctrlFlag já tem declarados os tipos de
 	// operação executadas pelas instruções acima.
-
 	if (fpOp == FPOpFlag::FP_REG_32) {
 		// 32-bit implementation
 		float fA = Util::uint64LowAsFloat(A);
@@ -421,6 +454,10 @@ int BasicCPU::EXF()
 		{
 			case ALUctrlFlag::SUB:
 				ALUout = Util::floatAsUint64Low(fA - fB);
+				return 0;
+			case ALUctrlFlag::ADD:
+				ALUout = Util::floatAsUint64Low(fA + fB);
+				//ALUout = Util::doubleAsUint64(fA + fB); // assim funciona
 				return 0;
 			default:
 				// Controle não implementado
@@ -440,23 +477,12 @@ int BasicCPU::EXF()
  */
 int BasicCPU::MEM()
 {
-	switch (MEMctrl) {
-	case MEMctrlFlag::READ32:
-		MDR = memory->readData32(ALUout);
-		return 0;
-	case MEMctrlFlag::WRITE32:
-		memory->writeData32(ALUout,*Rd);
-		return 0;
-	case MEMctrlFlag::READ64:
-		MDR = memory->readData64(ALUout);
-		return 0;
-	case MEMctrlFlag::WRITE64:
-		memory->writeData64(ALUout,*Rd);
-		return 0;
-	default:
-		return 0;
-	}
-    // não implementado
+	// TODO
+	// Implementar o switch (MEMctrl) case MEMctrlFlag::XXX com as
+	// chamadas aos métodos corretos que implementam cada caso de
+	// acesso à memória de dados.
+	// não implementado
+
 	return 1;
 }
 
@@ -470,20 +496,13 @@ int BasicCPU::MEM()
  */
 int BasicCPU::WB()
 {
-    switch (WBctrl) {
-        case WBctrlFlag::WB_NONE:
-            return 0;
-        case WBctrlFlag::RegWrite:
-            if (MemtoReg) {
-                *Rd = MDR;
-            } else {
-                *Rd = ALUout;
-            }
-            return 0;
-        default:
-            // não implementado
-            return 1;
-    }
+	// TODO
+	// Implementar o switch (WBctrl) case WBctrlFlag::XXX com as
+	// atribuições corretas do registrador destino, quando houver, ou
+	// return 0 no caso WBctrlFlag::WB_NONE.
+	
+	// não implementado
+	return 1;
 }
 
 
