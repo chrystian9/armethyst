@@ -325,5 +325,7 @@ class BasicCPU: public CPU
 		 *		   1: se a instrução não estiver implementada.
 		 */
 		int decodeDataProcFloat();
+		
+		bool overFlowSUB(int64_t A, int64_t B);
 	
 };

@@ -35,7 +35,8 @@
 
 #include "BasicCPU.h"
 #include "Util.h"
-#include <iostream>
+
+#include<iostream>
 
 BasicCPU::BasicCPU(Memory *memory) {
 	this->memory = memory;
@@ -109,8 +110,7 @@ int BasicCPU::ID()
 
 	// operação inteira como padrão
 	fpOp = FPOpFlag::FP_UNDEF;
-	
-	int group = IR & 0x1E000000; // bits 28-25
+	int group = IR & 0x1E000000; // bits 28-25	
 	switch (group)
 	{
 		//100x Data Processing -- Immediate
@@ -135,9 +135,14 @@ int BasicCPU::ID()
             break;
 		case 0x14000000:
 		case 0x16000000:
-            //fpOP = false; 
             return decodeBranches();
             break;
+		// ATIVIDADE FUTURA
+		// implementar os DOIS GRUPOS A SEGUIR
+		//
+		// 101x Loads and Stores on page C4-237
+		// 101x Branches, Exception Generating and System instructions on page C4-237
+		
 		default:
 			return 1; // instrução não implementada
 	}
@@ -201,6 +206,33 @@ int BasicCPU::decodeDataProcImm() {
 			MemtoReg = false;
 			
 			return 0;
+		case 0x71000000:
+			// ler A e B
+			n = (IR & 0x000003E0) >> 5;
+			if (n == 31) {
+				A = SP;
+			} else {
+				A = getX(n); // 64-bit variant
+			}
+			imm = (IR & 0x003FFC00) >> 10;
+			B = imm;
+			
+			// registrador destino
+			Rd = &SP;
+			
+			// atribuir ALUctrl
+			ALUctrl = ALUctrlFlag::SUB;
+			
+			// atribuir MEMctrl
+			MEMctrl = MEMctrlFlag::MEM_NONE;
+			
+			// atribuir WBctrl
+			WBctrl = WBctrlFlag::WB_NONE;
+			
+			// atribuir MemtoReg
+			MemtoReg = false;
+			
+			return 0;
 		default:
 			// instrução não implementada
 			return 1;
@@ -218,14 +250,13 @@ int BasicCPU::decodeDataProcImm() {
  *		   1: se a instrução não estiver implementada.
  */
 int BasicCPU::decodeBranches() {
-
+	unsigned int n;
 	//DONE
 	//instrução não implementada
 	//declaração do imm26 valor imm6 na página C6-722
 	int32_t imm26 = (IR & 0x03FFFFFF);
+	int32_t imm19 = (IR & 0x00FFFFE0) >> 5;
 	//switch para pegar o branch
-	int aopa = IR & 0xFC000000;
-	std::cout << aopa << std::endl;
 	switch (IR & 0xFC000000) { //zera tudo que eu não quero deixando só os que quero testar
 		//000101 unconditional branch to a label on page C6-722 - verificação
 		case 0x14000000: //aplico a mascara pra ver se o que eu peguei é o que eu esperava
@@ -236,7 +267,6 @@ int BasicCPU::decodeBranches() {
 			A = PC; //salvo o endereço da instrução (PC) em A
 			//declara reg d
 			Rd = &PC; // salvo o endereço da instrução (PC) no registrador de destino
-			
 			// Atribuição das Flags
 
 			// atribuir ALUctrl
@@ -253,6 +283,37 @@ int BasicCPU::decodeBranches() {
 			MemtoReg=false;// como a info não vem da memoria é falso
 			
 			return 0;
+			
+		case 0x54000000:
+			A = PC;
+			B = ZR;
+			Rd = &PC;
+			switch (IR & 0x0000000F){
+				case 0x0000000D:
+					if(not((Z_flag == false) and (N_flag == V_flag))){
+						B = ((int64_t)(imm19 << 13)) >> 11;
+					}
+					break;
+				default:
+					return 1;
+			}
+			ALUctrl = ALUctrlFlag::ADD;
+			MEMctrl = MEMctrlFlag::MEM_NONE;
+			WBctrl = WBctrlFlag::RegWrite;
+			MemtoReg=false;
+			return 0;
+		
+		case 0xD4000000://ret
+			n = (IR & 0x000003E0) >> 5;
+			A = getX(n);
+			B = ZR;
+			Rd = &PC;
+			ALUctrl = ALUctrlFlag::ADD;
+			MEMctrl = MEMctrlFlag::MEM_NONE;
+			WBctrl = WBctrlFlag::RegWrite;
+			MemtoReg=false;
+			return 0;
+			
 		default:
 			return 1;
 
@@ -334,10 +395,10 @@ int BasicCPU::decodeLoadStore() {
 			}
 
 			B = ((IR & 0x003FFC00) >> 10) << 2; //offset = imm12 << scale. scale == size
+
 			d = IR & 0x0000001F;
-			
 			if (d == 31) {
-				Rd[0] = ZR;
+				Rd = (uint64_t *)&ZR;
 			}
 			else {
 				Rd = &R[d];
@@ -468,8 +529,7 @@ int BasicCPU::decodeDataProcReg() {
  *		   1: se a instrução não estiver implementada.
  */
 int BasicCPU::decodeDataProcFloat() {
-	unsigned int n,m,d;
-
+	unsigned int n,m,d,aux;
 	// TODO
 	// Acrescente os cases no switch já iniciado, para implementar a
 	// decodificação das instruções a seguir:
@@ -514,7 +574,6 @@ int BasicCPU::decodeDataProcFloat() {
 			MemtoReg = false;
 			
 			return 0;
-			break;
 		case 0x1E202800:
 			
 			if (IR & 0x00C00000) return 1;
@@ -546,7 +605,78 @@ int BasicCPU::decodeDataProcFloat() {
 			MemtoReg = false;
 			
 			return 0;
-			break;
+			
+		case 0x1E204000://fneg
+		
+			fpOp = FPOpFlag::FP_REG_32;
+			
+			n = (IR & 0x000003E0) >> 5;
+			
+			A = getSasInt(n);
+			
+			B = ZR;
+			
+			aux = A;
+			A = B;
+			B = aux;
+			
+			// registrador destino
+			d = (IR & 0x0000001F);
+			Rd = &(V[d]);
+
+			ALUctrl = ALUctrlFlag::SUB;
+			MEMctrl = MEMctrlFlag::MEM_NONE;
+			WBctrl = WBctrlFlag::RegWrite;
+			
+			// atribuir MemtoReg
+			MemtoReg = false;
+			
+			return 0;
+		
+		case 0x1E201800://fdiv
+		
+			fpOp = FPOpFlag::FP_REG_32;
+			
+			n = (IR & 0x000003E0) >> 5;
+			A = getSasInt(n); 
+			
+			m = (IR & 0x001F0000) >> 16;
+			B = getSasInt(m);
+			
+			// registrador destino
+			d = (IR & 0x0000001F);
+			Rd = &(V[d]);
+			
+			ALUctrl = ALUctrlFlag::DIV;
+			MEMctrl = MEMctrlFlag::MEM_NONE;
+			WBctrl = WBctrlFlag::RegWrite;
+			
+			MemtoReg = false;
+			
+			return 0;
+		
+		case 0x1E200800:
+		
+			fpOp = FPOpFlag::FP_REG_32;
+			
+			n = (IR & 0x000003E0) >> 5;
+			A = getSasInt(n); 
+			
+			m = (IR & 0x001F0000) >> 16;
+			B = getSasInt(m);
+			
+			// registrador destino
+			d = (IR & 0x0000001F);
+			Rd = &(V[d]);
+			
+			ALUctrl = ALUctrlFlag::MUL;
+			MEMctrl = MEMctrlFlag::MEM_NONE;
+			WBctrl = WBctrlFlag::RegWrite;
+			
+			MemtoReg = false;
+			
+			return 0;
+		
 		default:
 			// instrução não implementada
 			return 1;
@@ -556,6 +686,15 @@ int BasicCPU::decodeDataProcFloat() {
 	return 1;
 }
 
+bool BasicCPU::overFlowSUB(int64_t A, int64_t B)
+{
+	if((A >= 0) and (B < 0) and ((A - B)< 0)){
+		return true;
+	}if((A < 0) and (B >= 0) and ((A - B) >= 0)){
+		return true;
+	}
+	return false;
+}
 
 /**
  * Execução lógico aritmética inteira.
@@ -581,6 +720,9 @@ int BasicCPU::EXI()
 	{
 		case ALUctrlFlag::SUB:
 			ALUout = A - B;
+			N_flag = (((int64_t)(A - B)) < 0);
+			Z_flag = (((int64_t)(A - B)) == 0);
+			V_flag = overFlowSUB(((int64_t)A), ((int64_t)B));
 			return 0;
 		case ALUctrlFlag::ADD:
 			ALUout = A + B;
@@ -628,6 +770,12 @@ int BasicCPU::EXF()
 				ALUout = Util::floatAsUint64Low(fA + fB);
 				//ALUout = Util::doubleAsUint64(fA + fB); // assim funciona
 				return 0;
+			case ALUctrlFlag::DIV:
+				ALUout = Util::floatAsUint64Low(fA / fB);
+				return 0;
+			case ALUctrlFlag::MUL:
+				ALUout = Util::floatAsUint64Low(fA * fB);
+				return 0;
 			default:
 				// Controle não implementado
 				return 1;
@@ -657,7 +805,6 @@ int BasicCPU::MEM()
 			MDR = memory->readData32(ALUout);
 			return 0;
 		case MEMctrlFlag::WRITE32:
-			//std::cout << "Rd: " << *Rd << std::endl;
 			memory->writeData32(ALUout,*Rd);
 			return 0;
 		case MEMctrlFlag::READ64:

@@ -490,7 +490,7 @@ void test03(BasicCPUTest* cpu, BasicMemoryTest* memory, string fname)
 	
 	CALLTEST();
 	RESETTEST();
-
+/*
 	//
 	// Test ble .L3 (linha 53)
 	//
@@ -510,7 +510,7 @@ void test03(BasicCPUTest* cpu, BasicMemoryTest* memory, string fname)
 
 	CALLTEST();
 	RESETTEST();
-
+*/
 
 	//
 	// Test ret (linha 56)
