@@ -109,8 +109,8 @@ int BasicCPU::ID()
 
 	// operação inteira como padrão
 	fpOp = FPOpFlag::FP_UNDEF;
-
-	int group = IR & 0x1E000000; // bits 28-25	
+	
+	int group = IR & 0x1E000000; // bits 28-25
 	switch (group)
 	{
 		//100x Data Processing -- Immediate
@@ -132,6 +132,11 @@ int BasicCPU::ID()
         case 0x18000000:
         case 0x1C000000:
             return decodeLoadStore();
+            break;
+		case 0x14000000:
+		case 0x16000000:
+            //fpOP = false; 
+            return decodeBranches();
             break;
 		default:
 			return 1; // instrução não implementada
@@ -213,7 +218,45 @@ int BasicCPU::decodeDataProcImm() {
  *		   1: se a instrução não estiver implementada.
  */
 int BasicCPU::decodeBranches() {
-	// instrução não implementada
+
+	//DONE
+	//instrução não implementada
+	//declaração do imm26 valor imm6 na página C6-722
+	int32_t imm26 = (IR & 0x03FFFFFF);
+	//switch para pegar o branch
+	int aopa = IR & 0xFC000000;
+	std::cout << aopa << std::endl;
+	switch (IR & 0xFC000000) { //zera tudo que eu não quero deixando só os que quero testar
+		//000101 unconditional branch to a label on page C6-722 - verificação
+		case 0x14000000: //aplico a mascara pra ver se o que eu peguei é o que eu esperava
+			//exercício
+			// eliminação dos zeros à esquerda, casting explícito para uint64_t e retorno dos 26 bits à posição original, mas com 2 bits 0 à direita
+			B = ((int64_t)(imm26 << 6)) >> 4;
+			//declara reg a
+			A = PC; //salvo o endereço da instrução (PC) em A
+			//declara reg d
+			Rd = &PC; // salvo o endereço da instrução (PC) no registrador de destino
+			
+			// Atribuição das Flags
+
+			// atribuir ALUctrl
+			//estagio de execução
+			ALUctrl = ALUctrlFlag::ADD;//adição
+			// atribuir MEMctrl
+			//estágio de acesso a memoria
+			MEMctrl = MEMctrlFlag::MEM_NONE; //none pq nao acesso a memoria
+			// atribuir WBctrl
+			//estagio de write back
+			WBctrl = WBctrlFlag::RegWrite; //onde eu vou escrever a informação, que é no registrador, por isso o "RegWrite"
+			// atribuir MemtoReg
+			//segunda pleg para o estagio WB
+			MemtoReg=false;// como a info não vem da memoria é falso
+			
+			return 0;
+		default:
+			return 1;
+
+	}
 	return 1;
 }
 
@@ -227,8 +270,6 @@ int BasicCPU::decodeBranches() {
 int BasicCPU::decodeLoadStore() {
 	unsigned int n,d;
 	// instrução não implementada
-	unsigned ola = IR & 0xFFC00000;
-	std::cout << ola << " " << IR << std::endl;
 	switch (IR & 0xFFC00000) { 
 		case 0xB9800000://LDRSW C6.2.131 Immediate (Unsigned offset) 913
 			// como é escrita em 64 bits, não há problema em decodificar
@@ -285,7 +326,6 @@ int BasicCPU::decodeLoadStore() {
 		case 0xB9000000://STR C6.2.257 Unsigned offset 1135
 			//size = 10, 32 bit
 			n = (IR & 0x000003E0) >> 5;
-			std::cout << n << std::endl;
 			if (n == 31) {
 				A = SP;
 			}
@@ -294,11 +334,10 @@ int BasicCPU::decodeLoadStore() {
 			}
 
 			B = ((IR & 0x003FFC00) >> 10) << 2; //offset = imm12 << scale. scale == size
-			std::cout << B << " " << A << std::endl;
 			d = IR & 0x0000001F;
-			std::cout << d << std::endl;
+			
 			if (d == 31) {
-				Rd = &SP;
+				Rd[0] = ZR;
 			}
 			else {
 				Rd = &R[d];
