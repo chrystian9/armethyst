@@ -1,3 +1,20 @@
+/*
+Trabalho Final
+
+GCC117 - Arquitetura de Computadores I
+Universidade Federal de Lavras
+2020/2
+Prof. André Vital Saúde
+
+Grupo:
+ 201910343 - Ana Luiza Faria Calixto
+ 201920890 - Chrystian Arriel Amaral 
+ 201920244 - Thiago Salles Santos
+ 
+Intruções a ser apresentada:
+ ret (linha 56)
+*/
+
 /* ----------------------------------------------------------------------------
 
     (EN) armethyst - A simple ARM Simulator written in C++ for Computer Architecture
