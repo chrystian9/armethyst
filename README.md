@@ -1,6 +1,9 @@
 # Armethyst
 A simple ARM simulator for teaching purposes.
 
+Computer architecture project - DCC / UFLA.
+Authors: Chrystian Amaral, Thiago Salles, Ana Luiza Calixto.
+
 # Repository version control
 Every semester new students are enrolled in the course of Computer Architecture I at University of Lavras. Such students may be in contact with GitHub for the first time. Since version control is a subject out of the scope of the course, we adopt the following roles for this repository:
 
